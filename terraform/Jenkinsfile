@@ -34,10 +34,13 @@ pipeline {
         }
         stage('Terratest') {
             steps {
-                dir('terratest') {
-                    sh 'go test -v'
-                }
-            }
+        dir('terraform/terratest') {
+            sh '''
+            go mod tidy
+            go test -v
+            '''
+        }
+    }
         }
     }
     post {
