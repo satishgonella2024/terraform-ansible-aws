@@ -21,6 +21,9 @@ module "db" {
 
 resource "aws_security_group" "ec2_sg" {
   name_prefix = "wordpress-ec2-sg"
+  description = "Security group for EC2 instances"
+  vpc_id      = module.vpc.vpc_id  # Use the VPC ID from the VPC module
+
 
   ingress {
     from_port   = 80
@@ -82,4 +85,10 @@ output "ec2_public_ip" {
 
 output "rds_endpoint" {
   value = module.db.db_endpoint
+}
+
+variable "region" {
+  description = "The AWS region to deploy resources into"
+  type        = string
+  default     = "eu-west-2"
 }

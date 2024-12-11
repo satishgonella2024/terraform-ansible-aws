@@ -8,6 +8,8 @@
 *.pem
 *.key
 *.p12
+*.tfvars    # Ensure sensitive variable files are ignored
+*.tfvars.json
 
 # Ignore log files
 *.log
@@ -28,6 +30,15 @@
 # Ignore output files
 *.out
 *.tfplan
+*.plan      # Cover additional Terraform plan file extension
+
+# Ignore test and Python-related files
+__pycache__/
+*.pytest_cache
+coverage/
+
+# Ignore Terratest logs
+terratest.log
 
 # Ignore other potential temporary files
-__pycache__/
+*.tmp.*
