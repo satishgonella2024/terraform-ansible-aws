@@ -13,21 +13,21 @@ pipeline {
         }
         stage('Terraform Init') {
             steps {
-                dir('live/dev') {
+                dir('terraform/live/dev') {
                     sh 'terraform init'
                 }
             }
         }
         stage('Terraform Plan') {
             steps {
-                dir('live/dev') {
+                dir('terraform/live/dev') {
                     sh 'terraform plan'
                 }
             }
         }
         stage('Terraform Apply') {
             steps {
-                dir('live/dev') {
+                dir('terraform/live/dev') {
                     sh 'terraform apply -auto-approve'
                 }
             }
