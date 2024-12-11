@@ -1,5 +1,12 @@
 pipeline {
     agent any
+    parameters {
+        choice(
+            name: 'ACTION',
+            choices: ['create-only', 'destroy-only', 'destroy-and-create'],
+            description: 'Select the action to perform: Create-only, Destroy-only, or Destroy-and-Create.'
+        )
+    }
     environment {
         AWS_ACCESS_KEY_ID = credentials('aws-credentials') // Replace with your Jenkins AWS credentials ID
         AWS_SECRET_ACCESS_KEY = credentials('aws-credentials')
@@ -11,20 +18,20 @@ pipeline {
                     url: 'git@github.com:satishgonella2024/terraform-ansible-aws.git' // Replace with your GitHub repo URL
             }
         }
-        stage('Validate Backend Configuration') {
+        stage('Terraform Destroy') {
+            when {
+                expression { params.ACTION == 'destroy-only' || params.ACTION == 'destroy-and-create' }
+            }
             steps {
                 dir('terraform/live/dev') {
-                    script {
-                        if (!fileExists('backend.tf')) {
-                            error "Backend configuration (backend.tf) is missing. Ensure remote state is configured."
-                        } else {
-                            echo 'Backend configuration validated.'
-                        }
-                    }
+                    sh 'terraform destroy -auto-approve'
                 }
             }
         }
         stage('Terraform Init') {
+            when {
+                expression { params.ACTION == 'create-only' || params.ACTION == 'destroy-and-create' }
+            }
             steps {
                 dir('terraform/live/dev') {
                     sh 'terraform init'
@@ -32,6 +39,9 @@ pipeline {
             }
         }
         stage('Terratest') {
+            when {
+                expression { params.ACTION == 'create-only' || params.ACTION == 'destroy-and-create' }
+            }
             steps {
                 dir('terraform/terratest') {
                     sh '''
@@ -42,6 +52,9 @@ pipeline {
             }
         }
         stage('Terraform Plan') {
+            when {
+                expression { params.ACTION == 'create-only' || params.ACTION == 'destroy-and-create' }
+            }
             steps {
                 dir('terraform/live/dev') {
                     sh 'terraform plan -out=tfplan'
@@ -56,6 +69,9 @@ pipeline {
             }
         }
         stage('Approval') {
+            when {
+                expression { params.ACTION == 'create-only' || params.ACTION == 'destroy-and-create' }
+            }
             steps {
                 script {
                     dir('terraform/live/dev') {
@@ -73,9 +89,22 @@ pipeline {
             }
         }
         stage('Terraform Apply') {
+            when {
+                expression { params.ACTION == 'create-only' || params.ACTION == 'destroy-and-create' }
+            }
             steps {
                 dir('terraform/live/dev') {
                     sh 'terraform apply -auto-approve tfplan'
+                }
+            }
+        }
+        stage('State Validation') {
+            steps {
+                script {
+                    dir('terraform/live/dev') {
+                        sh 'terraform state list'
+                        echo 'State validation complete.'
+                    }
                 }
             }
         }
