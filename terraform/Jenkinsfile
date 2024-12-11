@@ -34,13 +34,8 @@ pipeline {
                     sh 'terraform plan -out=tfplan'
                 }
                 script {
-                    // Ensure tfplan file exists and show its content for approval
                     if (fileExists('terraform/live/dev/tfplan')) {
-                        def planOutput = sh(
-                            script: 'terraform show -json tfplan | jq .',
-                            returnStdout: true
-                        )
-                        writeFile file: 'plan-output.json', text: planOutput
+                        echo 'tfplan file created successfully.'
                     } else {
                         error "Terraform plan file 'tfplan' not found!"
                     }
@@ -50,8 +45,14 @@ pipeline {
         stage('Approval') {
             steps {
                 script {
-                    def planChanges = readFile('plan-output.json')
-                    input message: "Approve Terraform plan? Changes:\n${planChanges}"
+                    dir('terraform/live/dev') {
+                        def planOutput = sh(
+                            script: 'terraform show -json tfplan | jq .',
+                            returnStdout: true
+                        )
+                        writeFile file: 'plan-output.json', text: planOutput
+                        input message: "Approve Terraform plan? Changes:\n${planOutput}"
+                    }
                 }
             }
         }
