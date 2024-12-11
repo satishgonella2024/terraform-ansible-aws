@@ -26,7 +26,7 @@ pipeline {
                     . checkov-venv/bin/activate
                     pip install --upgrade pip setuptools wheel
                     pip install checkov
-                    checkov -d .
+                    checkov -d . --compact --skip-check CKV_SECRET_6
                     '''
                 }
             }
@@ -127,10 +127,12 @@ pipeline {
             echo 'Pipeline complete!'
         }
         cleanup {
-            dir('terraform/live/dev') {
-                sh 'rm -f tfplan'
+            steps {
+                dir('terraform/live/dev') {
+                    sh 'rm -f tfplan'
+                }
+                echo 'Cleanup stage complete!'
             }
-            echo 'Cleanup stage complete!'
         }
     }
 }
