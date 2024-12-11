@@ -8,14 +8,14 @@ pipeline {
         )
     }
     environment {
-        AWS_ACCESS_KEY_ID = credentials('aws-credentials')
+        AWS_ACCESS_KEY_ID = credentials('aws-credentials') // Replace with your Jenkins AWS credentials ID
         AWS_SECRET_ACCESS_KEY = credentials('aws-credentials')
     }
     stages {
         stage('Checkout Code') {
             steps {
                 git branch: 'main',
-                    url: 'git@github.com:satishgonella2024/terraform-ansible-aws.git'
+                    url: 'git@github.com:satishgonella2024/terraform-ansible-aws.git' // Replace with your GitHub repo URL
             }
         }
         stage('Checkov - Security and Compliance') {
@@ -111,6 +111,63 @@ pipeline {
                 }
             }
         }
+        stage('Capture Terraform Outputs') {
+            when {
+                expression { params.ACTION == 'create-only' || params.ACTION == 'destroy-and-create' }
+            }
+            steps {
+                dir('terraform/live/dev') {
+                    script {
+                        // Export Terraform outputs to a JSON file
+                        sh 'terraform output -json > ../ansible/terraform_outputs.json'
+                    }
+                }
+            }
+        }
+        stage('Generate Dynamic Ansible Inventory') {
+            when {
+                expression { params.ACTION == 'create-only' || params.ACTION == 'destroy-and-create' }
+            }
+            steps {
+                dir('ansible') {
+                    script {
+                        // Generate the inventory.yaml dynamically
+                        sh '''
+                        python3 <<EOF
+import json
+import yaml
+with open("terraform_outputs.json") as f:
+    outputs = json.load(f)
+hosts = outputs["instance_ip"]["value"]
+inventory = {
+    "all": {
+        "hosts": {
+            host: {"ansible_user": "ubuntu"} for host in hosts
+        }
+    }
+}
+with open("inventory.yaml", "w") as f:
+    yaml.dump(inventory, f)
+EOF
+                        '''
+                    }
+                }
+            }
+        }
+        stage('Configure WordPress with Ansible') {
+            when {
+                expression { params.ACTION == 'create-only' || params.ACTION == 'destroy-and-create' }
+            }
+            steps {
+                script {
+                    dir('ansible') {
+                        sh '''
+                        ansible-playbook -i inventory.yaml wordpress-playbook.yaml
+                        '''
+                    }
+                }
+            }
+        }
         stage('State Validation') {
             steps {
                 script {
@@ -127,10 +184,12 @@ pipeline {
             echo 'Pipeline complete!'
         }
         cleanup {
-            dir('terraform/live/dev') {
-                sh 'rm -f tfplan'
-            }
-            echo 'Cleanup stage complete!'
+            
+                dir('terraform/live/dev') {
+                    sh 'rm -f tfplan'
+                }
+                echo 'Cleanup stage complete!'
+            
         }
     }
 }
