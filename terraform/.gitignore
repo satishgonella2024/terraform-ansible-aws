@@ -1,0 +1,33 @@
+# Ignore local Terraform files
+*.tfstate
+*.tfstate.backup
+.terraform/
+.terraform.lock.hcl
+
+# Ignore sensitive files
+*.pem
+*.key
+*.p12
+
+# Ignore log files
+*.log
+
+# Ignore temporary files
+*.bak
+*.tmp
+*.swp
+
+# Ignore IDE-specific files
+.vscode/
+.idea/
+.DS_Store
+
+# Ignore Ansible-related temporary files
+*.retry
+
+# Ignore output files
+*.out
+*.tfplan
+
+# Ignore other potential temporary files
+__pycache__/
