@@ -8,14 +8,14 @@ pipeline {
         )
     }
     environment {
-        AWS_ACCESS_KEY_ID = credentials('aws-credentials') // Replace with your Jenkins AWS credentials ID
+        AWS_ACCESS_KEY_ID = credentials('aws-credentials')
         AWS_SECRET_ACCESS_KEY = credentials('aws-credentials')
     }
     stages {
         stage('Checkout Code') {
             steps {
                 git branch: 'main',
-                    url: 'git@github.com:satishgonella2024/terraform-ansible-aws.git' // Replace with your GitHub repo URL
+                    url: 'git@github.com:satishgonella2024/terraform-ansible-aws.git'
             }
         }
         stage('Checkov - Security and Compliance') {
@@ -23,7 +23,7 @@ pipeline {
                 dir('terraform/live/dev') {
                     sh '''
                     python3 -m venv checkov-venv
-                    source checkov-venv/bin/activate
+                    . checkov-venv/bin/activate
                     pip install --upgrade pip setuptools wheel
                     pip install checkov
                     checkov -d . || true
@@ -127,12 +127,10 @@ pipeline {
             echo 'Pipeline complete!'
         }
         cleanup {
-            steps {
-                dir('terraform/live/dev') {
-                    sh 'rm -f tfplan'
-                }
-                echo 'Cleanup stage complete!'
+            dir('terraform/live/dev') {
+                sh 'rm -f tfplan'
             }
+            echo 'Cleanup stage complete!'
         }
     }
 }
