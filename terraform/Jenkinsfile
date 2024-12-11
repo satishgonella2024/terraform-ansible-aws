@@ -11,6 +11,19 @@ pipeline {
                     url: 'git@github.com:satishgonella2024/terraform-ansible-aws.git' // Replace with your GitHub repo URL
             }
         }
+        stage('Validate Backend Configuration') {
+            steps {
+                dir('terraform/live/dev') {
+                    script {
+                        if (!fileExists('backend.tf')) {
+                            error "Backend configuration (backend.tf) is missing. Ensure remote state is configured."
+                        } else {
+                            echo 'Backend configuration validated.'
+                        }
+                    }
+                }
+            }
+        }
         stage('Terraform Init') {
             steps {
                 dir('terraform/live/dev') {
