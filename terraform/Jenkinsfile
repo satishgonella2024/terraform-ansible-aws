@@ -127,12 +127,10 @@ pipeline {
             echo 'Pipeline complete!'
         }
         cleanup {
-            steps {
-                dir('terraform/live/dev') {
-                    sh 'rm -f tfplan'
-                }
-                echo 'Cleanup stage complete!'
+            dir('terraform/live/dev') {
+                sh 'rm -f tfplan'
             }
+            echo 'Cleanup stage complete!'
         }
     }
 }
