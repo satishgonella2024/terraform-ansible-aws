@@ -35,7 +35,7 @@ pipeline {
                 }
                 script {
                     if (fileExists('terraform/live/dev/tfplan')) {
-                        echo 'tfplan file created successfully.'
+                        echo 'Terraform plan file created successfully.'
                     } else {
                         error "Terraform plan file 'tfplan' not found!"
                     }
@@ -69,7 +69,12 @@ pipeline {
             echo 'Pipeline complete!'
         }
         cleanup {
-            echo 'Cleanup stage...'
+            steps {
+                dir('terraform/live/dev') {
+                    sh 'rm -f tfplan plan-output.json'
+                }
+                echo 'Cleanup stage complete!'
+            }
         }
     }
 }
