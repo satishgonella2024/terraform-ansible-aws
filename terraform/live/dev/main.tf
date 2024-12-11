@@ -1,3 +1,7 @@
+provider "aws" {
+  region = "eu-west-2" # AWS London region
+}
+
 module "vpc" {
   source = "../../modules/vpc"
   region = "eu-west-2"
