@@ -33,11 +33,21 @@ pipeline {
                 dir('terraform/live/dev') {
                     sh 'terraform plan -out=tfplan'
                 }
+                script {
+                    def planOutput = sh(
+                        script: 'terraform show -json tfplan | jq .',
+                        returnStdout: true
+                    )
+                    writeFile file: 'plan-output.json', text: planOutput
+                }
             }
         }
         stage('Approval') {
             steps {
-                input message: 'Approve Terraform plan?'
+                script {
+                    def planChanges = readFile('plan-output.json')
+                    input message: "Approve Terraform plan? Changes:\n${planChanges}"
+                }
             }
         }
         stage('Terraform Apply') {
