@@ -46,12 +46,15 @@ pipeline {
             steps {
                 script {
                     dir('terraform/live/dev') {
-                        def planOutput = sh(
-                            script: 'terraform show -json tfplan | jq .',
+                        def summary = sh(
+                            script: 'terraform show -no-color tfplan | grep -E "^(Plan|\\+|\\-|~)"',
                             returnStdout: true
-                        )
-                        writeFile file: 'plan-output.json', text: planOutput
-                        input message: "Approve Terraform plan? Changes:\n${planOutput}"
+                        ).trim()
+                        def additions = summary.split('\n').count { it.startsWith('+') }
+                        def deletions = summary.split('\n').count { it.startsWith('-') }
+                        def changes = summary.split('\n').count { it.startsWith('~') }
+                        def humanReadable = "Summary:\nAdditions: ${additions}\nDeletions: ${deletions}\nChanges: ${changes}\n\nDetails:\n${summary}"
+                        input message: "Approve Terraform plan?\n\n${humanReadable}"
                     }
                 }
             }
@@ -71,7 +74,7 @@ pipeline {
         cleanup {
             steps {
                 dir('terraform/live/dev') {
-                    sh 'rm -f tfplan plan-output.json'
+                    sh 'rm -f tfplan'
                 }
                 echo 'Cleanup stage complete!'
             }
