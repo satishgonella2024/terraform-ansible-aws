@@ -34,11 +34,16 @@ pipeline {
                     sh 'terraform plan -out=tfplan'
                 }
                 script {
-                    def planOutput = sh(
-                        script: 'terraform show -json tfplan | jq .',
-                        returnStdout: true
-                    )
-                    writeFile file: 'plan-output.json', text: planOutput
+                    // Ensure tfplan file exists and show its content for approval
+                    if (fileExists('terraform/live/dev/tfplan')) {
+                        def planOutput = sh(
+                            script: 'terraform show -json tfplan | jq .',
+                            returnStdout: true
+                        )
+                        writeFile file: 'plan-output.json', text: planOutput
+                    } else {
+                        error "Terraform plan file 'tfplan' not found!"
+                    }
                 }
             }
         }
