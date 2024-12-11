@@ -23,7 +23,7 @@ pipeline {
                 dir('terraform/live/dev') {
                     sh '''
                     python3 -m venv checkov-venv
-                    source checkov-venv/bin/activate
+                    . checkov-venv/bin/activate
                     pip install --upgrade pip setuptools wheel
                     pip install checkov
                     checkov -d .
