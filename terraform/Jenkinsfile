@@ -21,26 +21,31 @@ pipeline {
         stage('Terraform Plan') {
             steps {
                 dir('terraform/live/dev') {
-                    sh 'terraform plan'
+                    sh 'terraform plan -out=tfplan'
+                }
+            }
+        }
+        stage('Approval') {
+            steps {
+                input message: 'Approve Terraform plan?'
+            }
+        }
+        stage('Terratest') {
+            steps {
+                dir('terraform/terratest') {
+                    sh '''
+                    go mod tidy
+                    go test -v
+                    '''
                 }
             }
         }
         stage('Terraform Apply') {
             steps {
                 dir('terraform/live/dev') {
-                    sh 'terraform apply -auto-approve'
+                    sh 'terraform apply -auto-approve tfplan'
                 }
             }
-        }
-        stage('Terratest') {
-            steps {
-        dir('terraform/terratest') {
-            sh '''
-            go mod tidy
-            go test -v
-            '''
-        }
-    }
         }
     }
     post {
