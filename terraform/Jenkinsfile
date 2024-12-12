@@ -16,10 +16,6 @@ pipeline {
             steps {
                 script {
                     cleanWs() // Clean workspace
-                    sh '''
-                    # Ensure necessary directories exist
-                    mkdir -p terraform/live/dev/../../ansible
-                    '''
                 }
             }
         }
@@ -129,65 +125,11 @@ pipeline {
             steps {
                 dir('terraform/live/dev') {
                     script {
-                        // Ensure the ansible directory exists before writing to it
+                        // Save Terraform outputs as artifacts
                         sh '''
-                        mkdir -p ../../../ansible
-                        terraform output -json > ../../../ansible/terraform_outputs.json
+                        terraform output -json > terraform_outputs.json
                         '''
-                    }
-                }
-            }
-        }
-        stage('Generate Dynamic Ansible Inventory') {
-            when {
-                expression { params.ACTION == 'create-only' || params.ACTION == 'destroy-and-create' }
-            }
-            steps {
-                dir('ansible') {
-                    script {
-                        // Generate the inventory.yaml dynamically
-                        sh '''
-                        python3 <<EOF
-import json
-import yaml
-with open("terraform_outputs.json") as f:
-    outputs = json.load(f)
-hosts = outputs["ec2_public_ip"]["value"]
-inventory = {
-    "all": {
-        "hosts": {
-            host: {"ansible_user": "ubuntu"} for host in hosts
-        }
-    }
-}
-with open("inventory.yaml", "w") as f:
-    yaml.dump(inventory, f)
-EOF
-                        '''
-                    }
-                }
-            }
-        }
-        stage('Install Ansible') {
-            steps {
-                sh '''
-                if ! command -v ansible-playbook > /dev/null; then
-                    sudo apt-get update
-                    sudo apt-get install -y ansible
-                fi
-                '''
-            }
-        }
-        stage('Configure WordPress with Ansible') {
-            when {
-                expression { params.ACTION == 'create-only' || params.ACTION == 'destroy-and-create' }
-            }
-            steps {
-                script {
-                    dir('ansible') {
-                        sh '''
-                        ansible-playbook -i inventory.yaml wordpress-playbook.yaml
-                        '''
+                        archiveArtifacts artifacts: 'terraform/live/dev/terraform_outputs.json'
                     }
                 }
             }
