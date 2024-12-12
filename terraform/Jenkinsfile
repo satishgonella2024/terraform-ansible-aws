@@ -131,9 +131,6 @@ pipeline {
                     script {
                         // Ensure the ansible directory exists before writing to it
                         sh '''
-                        // if [ ! -d "../ansible" ]; then
-                        //     mkdir -p ../ansible
-                        // fi
                         terraform output -json > ../../../ansible/terraform_outputs.json
                         '''
                     }
