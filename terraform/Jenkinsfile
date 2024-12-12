@@ -134,7 +134,7 @@ pipeline {
                         if [ ! -d "../ansible" ]; then
                             mkdir -p ../ansible
                         fi
-                        terraform output -json > ../ansible/terraform_outputs.json
+                        terraform output -json > ../../../ansible/terraform_outputs.json
                         '''
                     }
                 }
