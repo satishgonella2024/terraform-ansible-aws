@@ -8,83 +8,52 @@ pipeline {
         )
     }
     environment {
-        AWS_ACCESS_KEY_ID = credentials('aws-credentials') // Replace with your Jenkins AWS credentials ID
+        TERRAFORM_DIR = 'terraform/live/dev'
+        AWS_ACCESS_KEY_ID = credentials('aws-credentials')
         AWS_SECRET_ACCESS_KEY = credentials('aws-credentials')
     }
     stages {
         stage('Prepare Workspace') {
             steps {
-                script {
-                    cleanWs() // Clean workspace
-                }
+                cleanWs()
             }
         }
         stage('Checkout Code') {
             steps {
-                git branch: 'main',
-                    url: 'git@github.com:satishgonella2024/terraform-ansible-aws.git' // Replace with your GitHub repo URL
+                git branch: 'main', url: 'git@github.com:satishgonella2024/terraform-ansible-aws.git'
             }
         }
-        stage('Checkov - Security and Compliance') {
-            steps {
-                dir('terraform/live/dev') {
-                    sh '''
-                    python3 -m venv checkov-venv
-                    . checkov-venv/bin/activate
-                    pip install --upgrade pip setuptools wheel
-                    pip install checkov
-                    checkov -d . || true
-                    '''
-                }
-            }
-        }
-        stage('Terraform Destroy') {
-            when {
-                expression { params.ACTION == 'destroy-only' || params.ACTION == 'destroy-and-create' }
-            }
-            steps {
-                dir('terraform/live/dev') {
-                    sh 'terraform destroy -auto-approve'
-                }
-            }
-        }
-        stage('Terraform Init') {
-            when {
-                expression { params.ACTION == 'create-only' || params.ACTION == 'destroy-and-create' }
-            }
-            steps {
-                dir('terraform/live/dev') {
-                    sh 'terraform init'
-                }
-            }
-        }
-        stage('Terratest') {
-            when {
-                expression { params.ACTION == 'create-only' || params.ACTION == 'destroy-and-create' }
-            }
-            steps {
-                dir('terraform/terratest') {
-                    sh '''
-                    go mod tidy
-                    go test -v
-                    '''
-                }
-            }
-        }
-        stage('Terraform Plan') {
-            when {
-                expression { params.ACTION == 'create-only' || params.ACTION == 'destroy-and-create' }
-            }
-            steps {
-                dir('terraform/live/dev') {
-                    sh 'terraform plan -out=tfplan'
-                }
-                script {
-                    if (fileExists('terraform/live/dev/tfplan')) {
-                        echo 'Terraform plan file created successfully.'
-                    } else {
-                        error "Terraform plan file 'tfplan' not found!"
+        stage('Validation') {
+            parallel {
+                stage('Checkov') {
+                    steps {
+                        dir("${env.TERRAFORM_DIR}") {
+                            sh '''
+                            python3 -m venv checkov-venv || exit 1
+                            . checkov-venv/bin/activate
+                            pip install checkov || exit 1
+                            checkov -d . || true
+                            '''
+                        }
                     }
+                }
+                stage('Terratest') {
+                    steps {
+                        dir('terraform/terratest') {
+                            sh '''
+                            go mod tidy || exit 1
+                            go test -v || exit 1
+                            '''
+                        }
+                    }
+                }
+            }
+        }
+        stage('Terraform Init & Plan') {
+            steps {
+                dir("${env.TERRAFORM_DIR}") {
+                    sh 'terraform init || exit 1'
+                    sh 'terraform plan -out=tfplan || exit 1'
                 }
             }
         }
@@ -94,53 +63,26 @@ pipeline {
             }
             steps {
                 script {
-                    dir('terraform/live/dev') {
-                        def summary = sh(
-                            script: 'terraform show -no-color tfplan | grep -E "^(Plan|\\+|\\-|~)"',
-                            returnStdout: true
-                        ).trim()
-                        def additions = summary.split('\n').count { it.startsWith('+') }
-                        def deletions = summary.split('\n').count { it.startsWith('-') }
-                        def changes = summary.split('\n').count { it.startsWith('~') }
-                        def humanReadable = "Summary:\nAdditions: ${additions}\nDeletions: ${deletions}\nChanges: ${changes}\n\nDetails:\n${summary}"
-                        input message: "Approve Terraform plan?\n\n${humanReadable}"
-                    }
+                    def summary = sh(
+                        script: 'terraform show -no-color tfplan | grep -E "^(Plan|\\+|\\-|~)"',
+                        returnStdout: true
+                    ).trim()
+                    input message: "Review and Approve Terraform Plan:\n${summary}"
                 }
             }
         }
         stage('Terraform Apply') {
-            when {
-                expression { params.ACTION == 'create-only' || params.ACTION == 'destroy-and-create' }
-            }
             steps {
-                dir('terraform/live/dev') {
-                    sh 'terraform apply -auto-approve tfplan'
+                dir("${env.TERRAFORM_DIR}") {
+                    sh 'terraform apply -auto-approve tfplan || exit 1'
                 }
             }
         }
-        stage('Capture Terraform Outputs') {
-            when {
-                expression { params.ACTION == 'create-only' || params.ACTION == 'destroy-and-create' }
-            }
+        stage('Capture Outputs') {
             steps {
-                dir('terraform/live/dev') {
-                    script {
-                        // Save Terraform outputs as artifacts
-                        sh '''
-                        terraform output -json > terraform_outputs.json
-                        '''
-                        archiveArtifacts artifacts: 'terraform_outputs.json'
-                    }
-                }
-            }
-        }
-        stage('State Validation') {
-            steps {
-                script {
-                    dir('terraform/live/dev') {
-                        sh 'terraform state list'
-                        echo 'State validation complete.'
-                    }
+                dir("${env.TERRAFORM_DIR}") {
+                    sh 'terraform output -json > terraform_outputs.json'
+                    archiveArtifacts artifacts: 'terraform_outputs.json'
                 }
             }
         }
@@ -148,12 +90,6 @@ pipeline {
     post {
         always {
             echo 'Pipeline complete!'
-        }
-        cleanup {
-            dir('terraform/live/dev') {
-                sh 'rm -f tfplan'
-            }
-            echo 'Cleanup stage complete!'
         }
     }
 }
