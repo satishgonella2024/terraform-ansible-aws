@@ -1,10 +1,5 @@
 pipeline {
-    agent {
-        docker {
-            image 'hashicorp/terraform:light'
-            args '-v /var/run/docker.sock:/var/run/docker.sock'
-        }
-    }
+    agent any
     parameters {
         choice(
             name: 'ACTION',
@@ -30,7 +25,7 @@ pipeline {
                 script {
                     echo 'Installing dependencies...'
                     sh '''
-                    apk add --no-cache python3 py3-pip git bash curl || exit 1
+                    apt-get update && apt-get install -y python3 python3-pip git bash curl || exit 1
                     '''
                 }
             }
