@@ -26,6 +26,16 @@ pipeline {
                     url: 'git@github.com:satishgonella2024/terraform-ansible-aws.git' // Replace with your GitHub repo URL
             }
         }
+        stage('Terraform Destroy') {
+            when {
+                expression { params.ACTION == 'destroy-only' || params.ACTION == 'destroy-and-create' }
+            }
+            steps {
+                dir("${env.TERRAFORM_DIR}") {
+                    sh 'terraform destroy -auto-approve'
+                }
+            }
+        }
         stage('Validation') {
             parallel {
                 stage('Checkov') {
@@ -52,16 +62,7 @@ pipeline {
                 }
             }
         }
-        stage('Terraform Destroy') {
-            when {
-                expression { params.ACTION == 'destroy-only' || params.ACTION == 'destroy-and-create' }
-            }
-            steps {
-                dir("${env.TERRAFORM_DIR}") {
-                    sh 'terraform destroy -auto-approve'
-                }
-            }
-        }
+        
         stage('Terraform Init') {
             when {
                 expression { params.ACTION == 'create-only' || params.ACTION == 'destroy-and-create' }
