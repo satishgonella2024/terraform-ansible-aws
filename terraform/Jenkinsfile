@@ -129,7 +129,7 @@ pipeline {
                         sh '''
                         terraform output -json > terraform_outputs.json
                         '''
-                        archiveArtifacts artifacts: 'terraform/live/dev/terraform_outputs.json'
+                        archiveArtifacts artifacts: 'terraform_outputs.json'
                     }
                 }
             }
