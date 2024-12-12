@@ -131,6 +131,7 @@ pipeline {
                     script {
                         // Ensure the ansible directory exists before writing to it
                         sh '''
+                        mkdir -p ../../../ansible
                         terraform output -json > ../../../ansible/terraform_outputs.json
                         '''
                     }
@@ -165,6 +166,16 @@ EOF
                         '''
                     }
                 }
+            }
+        }
+        stage('Install Ansible') {
+            steps {
+                sh '''
+                if ! command -v ansible-playbook > /dev/null; then
+                    sudo apt-get update
+                    sudo apt-get install -y ansible
+                fi
+                '''
             }
         }
         stage('Configure WordPress with Ansible') {
