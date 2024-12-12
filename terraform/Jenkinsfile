@@ -24,6 +24,15 @@ pipeline {
                 }
             }
         }
+        stage('Install Dependencies') {
+            steps {
+                script {
+                    sh '''
+                    apk add --no-cache python3 py3-pip git bash curl
+                    '''
+                }
+            }
+        }
         stage('Checkout Code') {
             steps {
                 git branch: 'main',
