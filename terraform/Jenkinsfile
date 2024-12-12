@@ -26,16 +26,29 @@ pipeline {
                     url: 'git@github.com:satishgonella2024/terraform-ansible-aws.git' // Replace with your GitHub repo URL
             }
         }
-        stage('Checkov - Security and Compliance') {
-            steps {
-                dir("${env.TERRAFORM_DIR}") {
-                    sh '''
-                    python3 -m venv checkov-venv
-                    . checkov-venv/bin/activate
-                    pip install --upgrade pip setuptools wheel
-                    pip install checkov
-                    checkov -d . || true
-                    '''
+        stage('Validation') {
+            parallel {
+                stage('Checkov') {
+                    steps {
+                        dir("${env.TERRAFORM_DIR}") {
+                            sh '''
+                            python3 -m venv checkov-venv || exit 1
+                            . checkov-venv/bin/activate
+                            pip install checkov || exit 1
+                            checkov -d . || true
+                            '''
+                        }
+                    }
+                }
+                stage('Terratest') {
+                    steps {
+                        dir('terraform/terratest') {
+                            sh '''
+                            go mod tidy || exit 1
+                            go test -v || exit 1
+                            '''
+                        }
+                    }
                 }
             }
         }
@@ -56,19 +69,6 @@ pipeline {
             steps {
                 dir("${env.TERRAFORM_DIR}") {
                     sh 'terraform init'
-                }
-            }
-        }
-        stage('Terratest') {
-            when {
-                expression { params.ACTION == 'create-only' || params.ACTION == 'destroy-and-create' }
-            }
-            steps {
-                dir('terraform/terratest') {
-                    sh '''
-                    go mod tidy
-                    go test -v
-                    '''
                 }
             }
         }
