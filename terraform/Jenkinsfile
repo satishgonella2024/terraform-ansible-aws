@@ -15,24 +15,12 @@ pipeline {
         stage('Prepare Workspace') {
             steps {
                 script {
-                    echo 'Cleaning workspace...'
                     cleanWs() // Clean workspace
-                }
-            }
-        }
-        stage('Install Dependencies') {
-            steps {
-                script {
-                    echo 'Installing dependencies...'
-                    sh '''
-                    apt-get update && apt-get install -y python3 python3-pip git bash curl || exit 1
-                    '''
                 }
             }
         }
         stage('Checkout Code') {
             steps {
-                echo 'Checking out code...'
                 git branch: 'main',
                     url: 'git@github.com:satishgonella2024/terraform-ansible-aws.git' // Replace with your GitHub repo URL
             }
@@ -40,12 +28,11 @@ pipeline {
         stage('Checkov - Security and Compliance') {
             steps {
                 dir('terraform/live/dev') {
-                    echo 'Running Checkov...'
                     sh '''
-                    python3 -m venv checkov-venv || exit 1
+                    python3 -m venv checkov-venv
                     . checkov-venv/bin/activate
-                    pip install --upgrade pip setuptools wheel || exit 1
-                    pip install checkov || exit 1
+                    pip install --upgrade pip setuptools wheel
+                    pip install checkov
                     checkov -d . || true
                     '''
                 }
@@ -57,8 +44,7 @@ pipeline {
             }
             steps {
                 dir('terraform/live/dev') {
-                    echo 'Destroying Terraform resources...'
-                    sh 'terraform destroy -auto-approve || exit 1'
+                    sh 'terraform destroy -auto-approve'
                 }
             }
         }
@@ -68,8 +54,7 @@ pipeline {
             }
             steps {
                 dir('terraform/live/dev') {
-                    echo 'Initializing Terraform...'
-                    sh 'terraform init || exit 1'
+                    sh 'terraform init'
                 }
             }
         }
@@ -79,10 +64,9 @@ pipeline {
             }
             steps {
                 dir('terraform/terratest') {
-                    echo 'Running Terratest...'
                     sh '''
-                    go mod tidy || exit 1
-                    go test -v || exit 1
+                    go mod tidy
+                    go test -v
                     '''
                 }
             }
@@ -93,8 +77,7 @@ pipeline {
             }
             steps {
                 dir('terraform/live/dev') {
-                    echo 'Planning Terraform changes...'
-                    sh 'terraform plan -out=tfplan || exit 1'
+                    sh 'terraform plan -out=tfplan'
                 }
                 script {
                     if (fileExists('terraform/live/dev/tfplan')) {
@@ -131,8 +114,7 @@ pipeline {
             }
             steps {
                 dir('terraform/live/dev') {
-                    echo 'Applying Terraform changes...'
-                    sh 'terraform apply -auto-approve tfplan || exit 1'
+                    sh 'terraform apply -auto-approve tfplan'
                 }
             }
         }
@@ -143,11 +125,11 @@ pipeline {
             steps {
                 dir('terraform/live/dev') {
                     script {
-                        echo 'Capturing Terraform outputs...'
+                        // Save Terraform outputs as artifacts
                         sh '''
-                        terraform output -json > terraform_outputs.json || exit 1
+                        terraform output -json > terraform_outputs.json
                         '''
-                        archiveArtifacts artifacts: 'terraform_outputs.json'
+                        archiveArtifacts artifacts: 'terraform/live/dev/terraform_outputs.json'
                     }
                 }
             }
@@ -156,8 +138,7 @@ pipeline {
             steps {
                 script {
                     dir('terraform/live/dev') {
-                        echo 'Validating Terraform state...'
-                        sh 'terraform state list || exit 1'
+                        sh 'terraform state list'
                         echo 'State validation complete.'
                     }
                 }
@@ -170,8 +151,7 @@ pipeline {
         }
         cleanup {
             dir('terraform/live/dev') {
-                echo 'Cleaning up Terraform plan...'
-                sh 'rm -f tfplan || exit 1'
+                sh 'rm -f tfplan'
             }
             echo 'Cleanup stage complete!'
         }
