@@ -12,6 +12,12 @@ pipeline {
         AWS_SECRET_ACCESS_KEY = credentials('aws-credentials')
     }
     stages {
+        stage('Prepare Workspace') {
+    steps {
+        cleanWs() // Cleans the workspace
+    }
+}
+
         stage('Checkout Code') {
             steps {
                 git branch: 'main',
