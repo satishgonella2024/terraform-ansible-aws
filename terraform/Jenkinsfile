@@ -13,11 +13,16 @@ pipeline {
     }
     stages {
         stage('Prepare Workspace') {
-    steps {
-        cleanWs() // Cleans the workspace
-    }
-}
-
+            steps {
+                script {
+                    cleanWs() // Clean workspace
+                    sh '''
+                    # Ensure necessary directories exist
+                    mkdir -p terraform/live/dev/../../ansible
+                    '''
+                }
+            }
+        }
         stage('Checkout Code') {
             steps {
                 git branch: 'main',
@@ -117,20 +122,6 @@ pipeline {
                 }
             }
         }
-        stage('Prepare Workspace') {
-    steps {
-        script {
-            dir('terraform/live/dev') {
-                // Ensure the ansible directory exists
-                sh '''
-                if [ ! -d "../../ansible" ]; then
-                    mkdir -p ../../ansible
-                fi
-                '''
-            }
-        }
-    }
-}
         stage('Capture Terraform Outputs') {
             when {
                 expression { params.ACTION == 'create-only' || params.ACTION == 'destroy-and-create' }
@@ -204,12 +195,10 @@ EOF
             echo 'Pipeline complete!'
         }
         cleanup {
-            
-                dir('terraform/live/dev') {
-                    sh 'rm -f tfplan'
-                }
-                echo 'Cleanup stage complete!'
-            
+            dir('terraform/live/dev') {
+                sh 'rm -f tfplan'
+            }
+            echo 'Cleanup stage complete!'
         }
     }
 }
