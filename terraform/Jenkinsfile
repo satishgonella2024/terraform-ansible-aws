@@ -151,7 +151,7 @@ import json
 import yaml
 with open("terraform_outputs.json") as f:
     outputs = json.load(f)
-hosts = outputs["instance_ip"]["value"]
+hosts = outputs["ec2_public_ip"]["value"]
 inventory = {
     "all": {
         "hosts": {
