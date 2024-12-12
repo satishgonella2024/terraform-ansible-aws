@@ -111,6 +111,20 @@ pipeline {
                 }
             }
         }
+        stage('Prepare Workspace') {
+    steps {
+        script {
+            dir('terraform/live/dev') {
+                // Ensure the ansible directory exists
+                sh '''
+                if [ ! -d "../../ansible" ]; then
+                    mkdir -p ../../ansible
+                fi
+                '''
+            }
+        }
+    }
+}
         stage('Capture Terraform Outputs') {
             when {
                 expression { params.ACTION == 'create-only' || params.ACTION == 'destroy-and-create' }
