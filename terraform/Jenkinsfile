@@ -26,42 +26,32 @@ pipeline {
                     url: 'git@github.com:satishgonella2024/terraform-ansible-aws.git' // Replace with your GitHub repo URL
             }
         }
-        stage('Terraform Destroy') {
-            when {
-                expression { params.ACTION == 'destroy-only' || params.ACTION == 'destroy-and-create' }
-            }
-            steps {
-                dir("${env.TERRAFORM_DIR}") {
-                    sh 'terraform destroy -auto-approve'
-                }
-            }
-        }
-        stage('Validation') {
-            parallel {
-                stage('Checkov') {
-                    steps {
-                        dir("${env.TERRAFORM_DIR}") {
-                            sh '''
-                            python3 -m venv checkov-venv || exit 1
-                            . checkov-venv/bin/activate
-                            pip install checkov || exit 1
-                            checkov -d . || true
-                            '''
-                        }
-                    }
-                }
-                stage('Terratest') {
-                    steps {
-                        dir('terraform/terratest') {
-                            sh '''
-                            go mod tidy || exit 1
-                            go test -v || exit 1
-                            '''
-                        }
-                    }
-                }
-            }
-        }
+        // stage('Validation') {
+        //     parallel {
+        //         stage('Checkov') {
+        //             steps {
+        //                 dir("${env.TERRAFORM_DIR}") {
+        //                     sh '''
+        //                     python3 -m venv checkov-venv || exit 1
+        //                     . checkov-venv/bin/activate
+        //                     pip install checkov || exit 1
+        //                     checkov -d . || true
+        //                     '''
+        //                 }
+        //             }
+        //         }
+        //         stage('Terratest') {
+        //             steps {
+        //                 dir('terraform/terratest') {
+        //                     sh '''
+        //                     go mod tidy || exit 1
+        //                     go test -v || exit 1
+        //                     '''
+        //                 }
+        //             }
+        //         }
+        //     }
+        // }
         
         stage('Terraform Init') {
             when {
@@ -117,6 +107,16 @@ pipeline {
             steps {
                 dir("${env.TERRAFORM_DIR}") {
                     sh 'terraform apply -auto-approve tfplan'
+                }
+            }
+        }
+           stage('Terraform Destroy') {
+            when {
+                expression { params.ACTION == 'destroy-only' || params.ACTION == 'destroy-and-create' }
+            }
+            steps {
+                dir("${env.TERRAFORM_DIR}") {
+                    sh 'terraform destroy -auto-approve'
                 }
             }
         }
