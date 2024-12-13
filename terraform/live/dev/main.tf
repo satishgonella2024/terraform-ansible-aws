@@ -3,8 +3,8 @@ provider "aws" {
 }
 
 resource "aws_key_pair" "key" {
-  key_name   = "wordpress-key"
-  public_key = file("wordpress-key.pub")
+  key_name   = "wordpress-sample-key"
+  public_key = file("wordpress-sample-key.pub")
 }
 
 module "vpc" {
