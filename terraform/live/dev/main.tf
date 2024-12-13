@@ -4,7 +4,7 @@ provider "aws" {
 
 resource "aws_key_pair" "key" {
   key_name   = "wordpress-key"
-  public_key = file("~/.ssh/id_rsa.pub")
+  public_key = file("terraform/live/dev/wordpress-key.pub")
 }
 
 module "vpc" {
