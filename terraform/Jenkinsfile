@@ -36,20 +36,6 @@ pipeline {
                 }
             }
         }
-             stage('Prepare SSH Key') {
-            steps {
-                script {
-                    sh '''
-                    # Ensure the key exists in Jenkins workspace
-                    if [ ! -f ~/.ssh/wordpress-key.pub ]; then
-                        echo "Public key not found, generating it..."
-                        ssh-keygen -t rsa -b 2048 -f ~/.ssh/wordpress-sample-key -q -N ""
-                    fi
-                    cp ~/.ssh/wordpress-sample-key.pub terraform/live/dev/wordpress-sample-key.pub
-                    '''
-                }
-            }
-        }
         // stage('Validation') {
         //     parallel {
         //         stage('Checkov') {

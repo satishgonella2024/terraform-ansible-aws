@@ -2,11 +2,6 @@ provider "aws" {
   region = "eu-west-2"
 }
 
-resource "aws_key_pair" "key" {
-  key_name   = "wordpress-sample-key"
-  public_key = file("wordpress-sample-key.pub")
-}
-
 module "vpc" {
   source = "../../modules/vpc"
   region = "eu-west-2"
