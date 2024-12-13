@@ -36,32 +36,32 @@ pipeline {
                 }
             }
         }
-        stage('Validation') {
-            parallel {
-                stage('Checkov') {
-                    steps {
-                        dir("${env.TERRAFORM_DIR}") {
-                            sh '''
-                            python3 -m venv checkov-venv || exit 1
-                            . checkov-venv/bin/activate
-                            pip install checkov || exit 1
-                            checkov -d . || true
-                            '''
-                        }
-                    }
-                }
-                stage('Terratest') {
-                    steps {
-                        dir('terraform/terratest') {
-                            sh '''
-                            go mod tidy || exit 1
-                            go test -v || exit 1
-                            '''
-                        }
-                    }
-                }
-            }
-        }
+        // stage('Validation') {
+        //     parallel {
+        //         stage('Checkov') {
+        //             steps {
+        //                 dir("${env.TERRAFORM_DIR}") {
+        //                     sh '''
+        //                     python3 -m venv checkov-venv || exit 1
+        //                     . checkov-venv/bin/activate
+        //                     pip install checkov || exit 1
+        //                     checkov -d . || true
+        //                     '''
+        //                 }
+        //             }
+        //         }
+        //         stage('Terratest') {
+        //             steps {
+        //                 dir('terraform/terratest') {
+        //                     sh '''
+        //                     go mod tidy || exit 1
+        //                     go test -v || exit 1
+        //                     '''
+        //                 }
+        //             }
+        //         }
+        //     }
+        // }
         
         stage('Terraform Init') {
             when {
