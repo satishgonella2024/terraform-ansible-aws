@@ -1,5 +1,5 @@
 provider "aws" {
-  region = "eu-west-2"
+  region = "eu-west-2" # AWS London region
 }
 
 module "vpc" {
@@ -23,28 +23,11 @@ module "db" {
   db_subnet_group    = module.vpc.subnet_group
 }
 
-resource "aws_internet_gateway" "igw" {
-  vpc_id = module.vpc.vpc_id
-}
-
-resource "aws_route_table" "public" {
-  vpc_id = module.vpc.vpc_id
-
-  route {
-    cidr_block = "0.0.0.0/0"
-    gateway_id = aws_internet_gateway.igw.id
-  }
-}
-
-resource "aws_route_table_association" "public" {
-  subnet_id      = module.vpc.subnets[0]
-  route_table_id = aws_route_table.public.id
-}
-
 resource "aws_security_group" "ec2_sg" {
   name_prefix = "wordpress-ec2-sg"
   description = "Security group for EC2 instances"
-  vpc_id      = module.vpc.vpc_id
+  vpc_id      = module.vpc.vpc_id  # Use the VPC ID from the VPC module
+
 
   ingress {
     from_port   = 80
@@ -75,6 +58,7 @@ resource "aws_security_group" "ec2_sg" {
   }
 }
 
+
 resource "aws_security_group" "rds_sg" {
   name_prefix = "wordpress-rds-sg"
   vpc_id      = module.vpc.vpc_id
@@ -93,6 +77,7 @@ resource "aws_security_group" "rds_sg" {
     cidr_blocks = ["0.0.0.0/0"]
   }
 }
+
 
 output "ec2_instance_id" {
   value = module.instance.instance_id
